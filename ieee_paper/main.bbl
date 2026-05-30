@@ -122,4 +122,19 @@ P.~Kairouz, H.~B. McMahan, {\em et~al.}, ``Advances and open problems in
   federated learning,'' {\em Foundations and Trends in Machine Learning},
   vol.~14, no.~1--2, pp.~1--210, 2021.
 
+\bibitem{dataset_repo}
+I.~A. Chowdhury, J.~Ahmed, S.~Abdullah, and M.~I.~H. Shanto, ``Verified {PHQ}
+  reported-crime dataset (january 2019--april 2026).'' GitHub repository,
+  \url{https://github.com/pro-ifaz/Conference/tree/main/dataset}, 2026.
+\newblock Source-verified monthly reported-crime dataset with provenance and
+  audit-findings logs. Accessed: 30 May 2026.
+
+\bibitem{software_repo}
+I.~A. Chowdhury, J.~Ahmed, S.~Abdullah, and M.~I.~H. Shanto, ``Crime monitoring
+  system: Operational forecasting and monitoring software.'' GitHub repository,
+  \url{https://github.com/pro-ifaz/Conference/tree/main/software_crime_monitoring_system},
+  2026.
+\newblock Deployable monthly monitoring application described in this paper.
+  Accessed: 30 May 2026.
+
 \end{thebibliography}
