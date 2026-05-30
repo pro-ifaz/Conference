@@ -6,19 +6,23 @@
 | Training start | Jan 2020 | **Jan 2019** |
 | Total series length | 76 months | **88 months** (all 15 categories, after adding verified 2019 data) |
 | Training cutoff for testing | May 2025 | **April 2025** |
-| Test design | continuous Jun 2025–Apr 2026 | **3 separate horizons: 3, 6, 12 months** |
-| Test target months | 12 months in a row | **Jul 2025, Oct 2025, Apr 2026** |
+| Test design | continuous Jun 2025–Apr 2026 | **4 separate horizons: 1, 3, 6, 12 months** |
+| Test target months | 12 months in a row | **May 2025, Jul 2025, Oct 2025, Apr 2026** |
 | 2027 projection base | data to Apr 2026 | data to Apr 2026 (88 months) |
 
 Why this is better: starting in 2019 gives a full normal pre-COVID baseline, so the pandemic drop
-is learned as a mid-series event. Three horizon-specific back-tests are more informative than one
+is learned as a mid-series event. Four horizon-specific back-tests are more informative than one
 continuous window, and each lands on a real, separately verified month.
 
-## 2. New headline numbers (national Total Cases, ensemble)
-- 3-month (Jul 2025): **97.8%** practical accuracy
+## 2. New headline numbers (national Total Cases, ensemble, single-origin back-test)
+- 1-month (May 2025): **98.9%** practical accuracy
+- 3-month (Jul 2025): **97.8%**
 - 6-month (Oct 2025): **92.8%**
 - 12-month (Apr 2026): **86.1%**
-- Mean: **92.2%**
+
+Reported separately, the rolling-origin validation averaged over the stable categories runs from
+**94.7%** at 1 month to **89.9%** at 12 months. The two are different measurements (one series at
+one origin vs. an average over five categories and many origins) and are not directly comparable.
 
 ## 3. Model ranking (rolling-origin, stable categories)
 1. Ensemble — **8.96% MAPE, MASE 0.577**, beats Seasonal Naive 75% of the time
@@ -35,7 +39,7 @@ and replaced by the Seasonal Naive forecast, with the event logged. This prevent
 from poisoning the ensemble and is recorded for audit.
 
 ## 5. Everything regenerated
-New rolling-origin results, new 3-horizon back-test, new XAI (feature importance + error by
+New rolling-origin results, new 4-horizon back-test, new XAI (feature importance + error by
 category), new scenario, and all 7 figures were regenerated from the executed notebook. The paper
 was rewritten from scratch.
 
@@ -47,5 +51,18 @@ full 15-category breakdown for all 12 months of 2019. Each month's 15 categories
 sum exactly to the printed monthly Total Cases (12 of 12 match). With this added:
 - **Every crime category now spans 88 months (Jan 2019 -- Apr 2026).**
 - Stable-category accuracy improved at every horizon (12-month: 87.9% -> 89.9%).
-- The headline back-test (97.8 / 92.8 / 86.1) is unchanged, because Total Cases already used 88 months.
+- The headline back-test (98.9 / 97.8 / 92.8 / 86.1) is unchanged, because Total Cases already used 88 months.
 - The previous "category data only from 2020" limitation is now fully resolved.
+
+## 7. Paper finalization (May 2026)
+Last pass before submission; the analysis and all numbers are unchanged.
+- Retitled to *"From Verification to Forecasting: Monitoring Official Crime Trends in Bangladesh."*
+- Author block finalized: Ifaz Ahmed Chowdhury, Jubair Ahmed, Sakib Abdullah, Md. Imran Hasan Shanto
+  (Dept. of CSE, BUBT), each with an institutional email.
+- The verified dataset and the monitoring software were published as public repositories and added
+  to the paper's references.
+- The abstract now explicitly labels the single-origin back-test and the rolling-origin average so
+  they are not mistaken for inconsistent numbers.
+- The PHQ source citation range was corrected to January 2019 (with a monthly-vs-annual sourcing
+  note).
+- `outputs/csv/_results.json` was completed with the 1-month back-test row (98.9%).
