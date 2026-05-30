@@ -226,6 +226,34 @@ def months_present():
     conn.close(); return df
 
 
+def month_management_table() -> pd.DataFrame:
+    """Every month that has *any* data (active or soft-deleted), with counts and a status
+    label, for the Manage/Delete UI. Soft-deleted months (rows exist but none active) are
+    surfaced so they can be restored; active months show their verification status."""
+    conn = get_conn()
+    df = pd.read_sql_query(
+        "SELECT year, month, MIN(date) AS date, "
+        "SUM(CASE WHEN is_active=1 THEN 1 ELSE 0 END) AS active_rows, "
+        "COUNT(*) AS total_rows, "
+        "COUNT(DISTINCT version_id) AS versions, "
+        "MAX(CASE WHEN is_active=1 THEN verification_status END) AS active_status "
+        "FROM crime_monthly_data GROUP BY year, month ORDER BY date", conn)
+    conn.close()
+    if df.empty:
+        return df
+
+    def _state(r):
+        if int(r["active_rows"]) > 0:
+            return (r["active_status"] or "active")
+        return "deleted (soft)"
+
+    df["state"] = df.apply(_state, axis=1)
+    df["active_rows"] = df["active_rows"].astype(int)
+    df["total_rows"] = df["total_rows"].astype(int)
+    df["versions"] = df["versions"].astype(int)
+    return df
+
+
 def next_expected_month():
     """Return (year, month) of the month *after* the latest approved month, useful as a default
     for the Add Monthly Data page. Falls back to current calendar month if nothing exists."""

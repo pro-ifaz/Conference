@@ -89,11 +89,13 @@ DEMO_USERS = {
     "viewer":   {"password": "viewer123",  "role": "viewer",   "name": "Viewer"},
 }
 ROLE_PERMS = {
-    "admin":    {"enter", "import", "validate", "approve", "recalibrate", "view"},
+    "admin":    {"enter", "import", "validate", "approve", "recalibrate", "delete", "view"},
     "operator": {"enter", "import", "validate", "view"},
     "reviewer": {"validate", "approve", "view"},
     "viewer":   {"view"},
 }
+# Only roles with the "delete" permission may soft-delete / restore a month.
+# A *hard* (permanent) purge is further restricted to the admin role at the UI layer.
 
 # Show the seed-credentials hint on the login page? Off in production.
 SHOW_LOGIN_HINT = os.environ.get("PHQ_SHOW_LOGIN_HINT", "0").lower() in ("1", "true", "yes")

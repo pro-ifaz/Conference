@@ -95,6 +95,24 @@ def _normalize_columns(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
+def _show_clean_report(rep: dict):
+    """Tell the user exactly what the import sanitiser removed/normalised (no silent loss)."""
+    msgs = []
+    if rep.get("empty_rows_dropped"):
+        msgs.append(f"removed {rep['empty_rows_dropped']} fully-empty row(s)")
+    if rep.get("blank_unit_rows_dropped"):
+        msgs.append(f"removed {rep['blank_unit_rows_dropped']} row(s) with a blank unit name "
+                    "(e.g. a trailing total row)")
+    if rep.get("normalised_unit_names"):
+        msgs.append(f"normalised {rep['normalised_unit_names']} unit label(s)")
+    if msgs:
+        st.info("🧹 Auto-cleaned on import: " + "; ".join(msgs) + ".")
+    if rep.get("duplicate_units"):
+        st.warning("⚠️ Duplicate unit row(s) detected — these would double-count: "
+                   + ", ".join(map(str, rep["duplicate_units"]))
+                   + ". Validation will block approval until you resolve them.")
+
+
 # ---- obtain the wide dataframe either by editing or upload ----
 df_wide = None
 if method == "Built-in manual table":
@@ -143,7 +161,14 @@ if method == "Built-in manual table":
     if st.button("🧮 Auto-calculate Total_Cases"):
         edited = DE.autocalc_total(edited)
         st.session_state["entry_df"] = edited
-    df_wide = DE.autocalc_total(edited).set_index("Unit")
+    # Sanitise silently here (the editor is live, so blank in-progress rows are expected);
+    # the Validate step still surfaces blank/duplicate units in the validation report.
+    try:
+        _cleaned, _ = DE.clean_uploaded_wide(edited)
+        df_wide = DE.autocalc_total(_cleaned).set_index("Unit")
+    except ValueError as e:
+        st.error(str(e))
+        df_wide = None
 
 else:
     up = st.file_uploader("Upload monthly data (CSV or XLSX)", type=["csv", "xlsx"])
@@ -164,7 +189,18 @@ else:
             raw = raw.rename(columns={unit_col: "Unit"})
             st.caption("Columns not matching a standard category are treated as custom "
                        "(excluded from pipeline unless mapped).")
-            df_wide = DE.autocalc_total(raw).set_index("Unit")
+            try:
+                cleaned, clean_rep = DE.clean_uploaded_wide(raw)
+                _show_clean_report(clean_rep)
+                if cleaned.empty:
+                    st.error("After cleaning, no valid unit rows remain. Check the unit column "
+                             "selection and the file contents.")
+                    df_wide = None
+                else:
+                    df_wide = DE.autocalc_total(cleaned).set_index("Unit")
+            except ValueError as e:
+                st.error(str(e))
+                df_wide = None
 
 # ---- provenance ----
 ui.section("3 · Source provenance"); st.markdown("##### Source provenance (official PHQ statement)")
@@ -246,3 +282,112 @@ if ui.can(user, "approve"):
                 st.dataframe(res["fallback_log"], use_container_width=True, hide_index=True)
         st.info("👉 Next step: open **Forecast vs Actual** to see how the previously saved forecast "
                 "compared to the newly approved month, or **Drift Monitoring** to review the new status.")
+
+# ---- manage / delete / restore existing months (delete permission required) ----
+if ui.can(user, "delete"):
+    st.divider()
+    ui.section("6 · Manage / delete existing months")
+    st.markdown("##### Delete or restore a month")
+    st.caption("**Soft delete** is reversible — the data is kept and can be restored later "
+               "(recommended for fixing a bad import). **Hard delete** permanently removes the "
+               "month and cannot be undone (admin only). Every action is audit-logged.")
+
+    # one-time confirmation banner after an action (survives the rerun below)
+    if st.session_state.get("_month_action_msg"):
+        st.success(st.session_state.pop("_month_action_msg"))
+
+    mtab = db.month_management_table()
+    if mtab is None or mtab.empty:
+        st.info("No months in the database yet.")
+    else:
+        show = mtab.assign(Month=[f"{int(y)}-{int(m):02d}" for y, m in zip(mtab.year, mtab.month)])
+        st.dataframe(
+            show[["Month", "state", "active_rows", "total_rows", "versions"]].rename(
+                columns={"state": "Status", "active_rows": "Active rows",
+                         "total_rows": "Total rows", "versions": "Versions"}),
+            use_container_width=True, hide_index=True)
+
+        opts = {f"{int(r.year)}-{int(r.month):02d}  ·  {r.state}": (int(r.year), int(r.month), r.state)
+                for _, r in mtab.iterrows()}
+        sel = st.selectbox("Select a month to manage", list(opts.keys()), key="mng_sel")
+        sy, sm, sstate = opts[sel]
+        token = f"{sy}-{sm:02d}"
+        is_soft_deleted = (sstate == "deleted (soft)")
+
+        if is_soft_deleted:
+            st.info(f"**{token}** is currently soft-deleted (hidden from all forecasts and "
+                    "dashboards). You can restore it below.")
+            rreason = st.text_input("Reason / note (optional)", key="mng_restore_reason")
+            rconf = st.text_input(f"Type `RESTORE {token}` to confirm", key="mng_restore_confirm")
+            if st.button("♻️ Restore month", key="mng_restore_btn"):
+                if rconf.strip() != f"RESTORE {token}":
+                    st.error(f"Confirmation text must be exactly: RESTORE {token}")
+                else:
+                    try:
+                        DE.restore_month(sy, sm, user["username"], reason=rreason)
+                        db.invalidate_cache()
+                        st.session_state["_month_changed"] = token
+                        st.session_state["_month_action_msg"] = (
+                            f"♻️ Restored {token}. Forecasts/drift are now stale — "
+                            "re-run recalibration below.")
+                        st.rerun()
+                    except ValueError as e:
+                        st.error(str(e))
+        else:
+            is_admin = str(user.get("role", "")).lower() == "admin"
+            # deleting a month that is NOT the most recent active month leaves a gap in the
+            # monthly time series, which seasonal models are sensitive to — flag it.
+            active_mt = mtab[mtab["active_rows"] > 0]
+            if not active_mt.empty:
+                latest_active = active_mt.sort_values("date")[["year", "month"]].iloc[-1]
+                if (int(latest_active["year"]), int(latest_active["month"])) != (sy, sm):
+                    st.warning(f"Note: {token} is not the most recent month. Deleting it leaves a "
+                               "gap in the monthly series — recalibrate afterwards and review drift.")
+            mode = st.radio("Delete type", ["Soft delete (reversible)", "Hard delete (permanent)"],
+                            key="mng_mode", horizontal=True)
+            hard = mode.startswith("Hard")
+            if hard and not is_admin:
+                st.warning("Only an **admin** can perform a permanent hard delete. "
+                           "Use soft delete, or sign in as admin.")
+            dreason = st.text_input("Reason (required)", key="mng_del_reason",
+                                    placeholder="e.g. wrong source file, re-importing corrected data")
+            dconf = st.text_input(f"Type `DELETE {token}` to confirm", key="mng_del_confirm")
+            if st.button("🗑️ Delete month", key="mng_del_btn", disabled=(hard and not is_admin)):
+                if not dreason.strip():
+                    st.error("A reason is required to delete a month.")
+                elif dconf.strip() != f"DELETE {token}":
+                    st.error(f"Confirmation text must be exactly: DELETE {token}")
+                else:
+                    try:
+                        res = DE.delete_month(sy, sm, user["username"], reason=dreason, hard=hard)
+                        db.invalidate_cache()
+                        st.session_state["_month_changed"] = token
+                        kind = "🗑️ Permanently deleted" if res["hard"] else "🗂️ Soft-deleted"
+                        tail = ("" if res["hard"]
+                                else " You can restore it from this panel at any time.")
+                        st.session_state["_month_action_msg"] = (
+                            f"{kind} {token} ({res['deleted_rows']} row(s)).{tail}")
+                        st.rerun()
+                    except ValueError as e:
+                        st.error(str(e))
+
+    # offer recalibration after any delete/restore (totals changed → forecasts/drift stale)
+    if st.session_state.get("_month_changed"):
+        st.warning(f"Data changed for **{st.session_state['_month_changed']}** — forecasts, drift "
+                   "and metrics are now stale.")
+        cols = st.columns([1, 1])
+        if ui.can(user, "recalibrate") and cols[0].button("🔄 Run recalibration now",
+                                                           key="mng_recal_btn"):
+            from modules import recalibration as R
+            with st.spinner("Refreshing rolling-origin validation, drift, and next forecast… "
+                            "(full-mode recalibration takes ~60–120 s)"):
+                rr = R.recalibrate(run_type="post-delete", created_by=user["username"])
+            db.invalidate_cache()
+            st.session_state["last_run"] = rr
+            st.session_state["last_drift_status"] = rr.get("overall_drift", "unknown")
+            st.session_state.pop("_month_changed", None)
+            st.success(f"Recalibrated. Run #{rr['run_id']} · {rr['runtime']}s · "
+                       f"overall drift status: **{rr.get('overall_drift', 'unknown')}**.")
+        if cols[1].button("Dismiss", key="mng_dismiss_btn"):
+            st.session_state.pop("_month_changed", None)
+            st.rerun()
