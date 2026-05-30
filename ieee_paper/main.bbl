@@ -1,0 +1,125 @@
+\begin{thebibliography}{10}
+
+\bibitem{awal2016}
+M.~A. Awal, J.~Rabbi, S.~I. Hossain, and M.~M.~A. Hashem, ``Using linear
+  regression to forecast future trends in crime of {Bangladesh},'' in {\em
+  Proc.\ Int.\ Conf.\ on Informatics, Electronics and Vision (ICIEV)},
+  pp.~333--338, 2016.
+
+\bibitem{biswas2019}
+A.~Biswas and S.~Basak, ``Forecasting the trends and patterns of crime in
+  {Bangladesh} using machine learning model,'' in {\em Proc.\ Int.\ Conf.\ on
+  Intelligent Systems and Computer Vision (ISCV)}, pp.~114--118, 2019.
+
+\bibitem{nahid2021}
+N.~Nahid, ``Bangladesh crime reports analysis and prediction,'' 2021.
+\newblock Technical report, available online.
+
+\bibitem{shohan2022}
+M.~R. Shohan, A.~Akash, {\em et~al.}, ``Crime prediction using machine learning
+  with a novel crime dataset,'' {\em Int.\ J.\ Data Science and Analytics},
+  2025.
+\newblock Online first.
+
+\bibitem{tashman2000}
+L.~J. Tashman, ``Out-of-sample tests of forecasting accuracy: an analysis and
+  review,'' {\em International Journal of Forecasting}, vol.~16, no.~4,
+  pp.~437--450, 2000.
+
+\bibitem{bergmeir2012}
+C.~Bergmeir and J.~M. Ben\'{\i}tez, ``On the use of cross-validation for time
+  series predictor evaluation,'' {\em Information Sciences}, vol.~191,
+  pp.~192--213, 2012.
+
+\bibitem{hyndman2006}
+R.~J. Hyndman and A.~B. Koehler, ``Another look at measures of forecast
+  accuracy,'' {\em International Journal of Forecasting}, vol.~22, no.~4,
+  pp.~679--688, 2006.
+
+\bibitem{boxjenkins2015}
+G.~E.~P. Box, G.~M. Jenkins, G.~C. Reinsel, and G.~M. Ljung, {\em Time Series
+  Analysis: Forecasting and Control}.
+\newblock Wiley, 5th~ed., 2015.
+
+\bibitem{hyndman2002ets}
+R.~J. Hyndman, A.~B. Koehler, R.~D. Snyder, and S.~Grose, ``A state space
+  framework for automatic forecasting using exponential smoothing methods,''
+  {\em International Journal of Forecasting}, vol.~18, no.~3, pp.~439--454,
+  2002.
+
+\bibitem{assimakopoulos2000theta}
+V.~Assimakopoulos and K.~Nikolopoulos, ``The theta model: a decomposition
+  approach to forecasting,'' {\em International Journal of Forecasting},
+  vol.~16, no.~4, pp.~521--530, 2000.
+
+\bibitem{makridakis2000m3}
+S.~Makridakis and M.~Hibon, ``The {M3}-competition: results, conclusions and
+  implications,'' {\em International Journal of Forecasting}, vol.~16, no.~4,
+  pp.~451--476, 2000.
+\newblock Official record:
+  https://ideas.repec.org/a/eee/intfor/v16y2000i4p451-476.html.
+
+\bibitem{ke2017lightgbm}
+G.~Ke, Q.~Meng, T.~Finley, T.~Wang, W.~Chen, W.~Ma, Q.~Ye, and T.-Y. Liu,
+  ``{LightGBM}: A highly efficient gradient boosting decision tree,'' in {\em
+  Advances in Neural Information Processing Systems 30 (NeurIPS/NIPS 2017)},
+  pp.~3146--3154, 2017.
+\newblock
+  https://proceedings.neurips.cc/paper/6907-lightgbm-a-highly-efficient-gradient-boosting-decision-tree.
+
+\bibitem{seabold2010statsmodels}
+S.~Seabold and J.~Perktold, ``statsmodels: Econometric and statistical modeling
+  with {Python},'' in {\em Proceedings of the 9th Python in Science Conference
+  (SciPy)}, pp.~92--96, 2010.
+
+\bibitem{lim2021tft}
+B.~Lim, S.~{\"O}. Ar{\i}k, N.~Loeff, and T.~Pfister, ``Temporal fusion
+  transformers for interpretable multi-horizon time series forecasting,'' {\em
+  International Journal of Forecasting}, vol.~37, no.~4, pp.~1748--1764, 2021.
+
+\bibitem{nie2023patchtst}
+Y.~Nie, N.~H. Nguyen, P.~Sinthong, and J.~Kalagnanam, ``A time series is worth
+  64 words: Long-term forecasting with transformers,'' in {\em International
+  Conference on Learning Representations (ICLR)}, 2023.
+\newblock arXiv:2211.14730.
+
+\bibitem{breiman2001}
+L.~Breiman, ``Random forests,'' {\em Machine Learning}, vol.~45, no.~1,
+  pp.~5--32, 2001.
+
+\bibitem{lundberg2017shap}
+S.~M. Lundberg and S.-I. Lee, ``A unified approach to interpreting model
+  predictions,'' in {\em Advances in Neural Information Processing Systems
+  (NeurIPS)}, vol.~30, 2017.
+
+\bibitem{ribeiro2016lime}
+M.~T. Ribeiro, S.~Singh, and C.~Guestrin, ````why should {I} trust you?'':
+  Explaining the predictions of any classifier,'' in {\em Proceedings of the
+  22nd ACM SIGKDD International Conference on Knowledge Discovery and Data
+  Mining (KDD)}, pp.~1135--1144, 2016.
+
+\bibitem{yin2023crime}
+J.~Yin, ``Crime prediction methods based on machine learning: A survey,'' {\em
+  Computers, Materials \& Continua}, vol.~74, no.~2, pp.~4601--4629, 2023.
+
+\bibitem{phq_source}
+{Police Headquarters (PHQ), Bangladesh Police}, ``Monthly crime statistics
+  (signed, scanned statements), january 2020--april 2026.'' Bangladesh Police
+  official crime-statistics portal,
+  \url{https://www.police.gov.bd/en/january_2020}, 2026.
+\newblock Official monthly reported-crime statements. Local signed scanned PDFs
+  used as provenance evidence; 2025--April 2026 segment verified in this work
+  (16/16 months, 429/429 comparisons matched). Accessed: 26 May 2026.
+
+\bibitem{mcmahan2017fl}
+B.~McMahan, E.~Moore, D.~Ramage, S.~Hampson, and B.~Ag{\"u}era~y Arcas,
+  ``Communication-efficient learning of deep networks from decentralized
+  data,'' in {\em Proceedings of the 20th International Conference on
+  Artificial Intelligence and Statistics (AISTATS)}, pp.~1273--1282, 2017.
+
+\bibitem{kairouz2021fl}
+P.~Kairouz, H.~B. McMahan, {\em et~al.}, ``Advances and open problems in
+  federated learning,'' {\em Foundations and Trends in Machine Learning},
+  vol.~14, no.~1--2, pp.~1--210, 2021.
+
+\end{thebibliography}

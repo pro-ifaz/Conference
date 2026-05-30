@@ -1,0 +1,535 @@
+\documentclass[conference]{IEEEtran}
+\IEEEoverridecommandlockouts
+\usepackage{cite}
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{textcomp}
+\usepackage{xcolor}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage[hidelinks]{hyperref}
+\def\BibTeX{{\rm B\kern-.05em{\sc i\kern-.025em b}\kern-.08em T\kern-.1667em\lower.7ex\hbox{E}\kern-.125emX}}
+
+\begin{document}
+
+\title{A Rolling-Origin Forecasting and Monitoring Framework\\ for Official Reported-Crime Trends in Bangladesh}
+
+\author{
+\IEEEauthorblockN{Ifaz Ahmed Chowdhury, Jubair Ahmed, Md.\ Sakib Abdullah, and Md.\ Imran Hasan Shanto}
+\IEEEauthorblockA{Department of Computer Science and Engineering\\
+Bangladesh University of Business and Technology (BUBT)\\
+Dhaka, Bangladesh}
+}
+
+\maketitle
+
+\begin{abstract}
+Bangladesh Police Headquarters (PHQ) publishes monthly crime statistics. We use these official
+numbers to build a forecasting and monitoring system that police planners and the public can
+trust. Our work has three honest goals: the data must be checked against the original government
+documents, the accuracy must be tested in a fair way (no peeking at the future), and the whole
+thing must keep working month after month as new data arrives. The dataset covers January 2019
+to April 2026 (88 months, 17 police units, 15 crime types). Every month is traced to the official signed PHQ
+statements and passed a five-step audit against 22 source documents: all 88 months reconcile
+internally, the six complete years are cross-checked against PHQ's independently printed annual
+pages, and a 429-cell manual re-audit of the most recent window matched the source with zero
+mismatches.
+We trained seven standard forecasting models and an average (ensemble) of them on data up to
+April 2025, then forecast 1, 3, 6, and 12 months ahead and compared the forecast with the real
+numbers that PHQ released later. For national Total Cases the forecast was 98.9\% accurate at 1
+month, 97.8\% at 3 months, 92.8\% at 6 months, and 86.1\% at 12 months. The ensemble was the most reliable model.
+We add a plain-language explanation layer that shows which past months the model leans on and
+which crime types are hard to forecast, and we ship a working monitoring application that
+ingests each new month, re-checks the previous forecast, and updates the models. A Transformer
+model was tested but did not help at this data size. The forecasting numbers are a planning
+scenario only, not a verified prediction. The system forecasts \emph{reported} crime counts; it
+does not measure hidden crime and does not claim to explain why crime rises or falls.
+\end{abstract}
+
+\begin{IEEEkeywords}
+reported-crime forecasting, rolling-origin validation, backtesting, MAPE, time-series,
+Bangladesh, Police Headquarters, source verification, operational monitoring, explainability
+\end{IEEEkeywords}
+
+\section{Introduction}
+Crime statistics matter for a country. They guide where police are sent, how budgets are spent,
+and how leaders plan for public safety. In Bangladesh, Police Headquarters (PHQ) releases a crime
+report every month. If those monthly numbers can be forecast reliably, planners can prepare ahead
+instead of only reacting after the fact.
+
+This paper is written so that it can be read by more than just machine-learning researchers. A
+police officer, a journalist, a student, or any citizen who cares about the country should be
+able to follow what we did and why it can be trusted. We therefore explain the technical words in
+plain language and keep the claims modest and honest.
+
+We are careful about one thing from the start. We forecast \emph{reported} crime, the crimes
+that were recorded by police and printed in the official PHQ statements. Reported crime is only a
+part of all real crime, because not every crime is reported. So this is not a tool that predicts
+true crime, and it is not a tool that predicts who will commit a crime. It is a tool that
+forecasts the official monthly counts and watches how those counts move over time.
+
+\subsection{Why this work can be trusted}
+The main point of this paper is not one big accuracy number. The stronger point is a pipeline
+that is honest end to end:
+\begin{itemize}
+  \item \textbf{Verified data.} Every number can be traced back to a signed PHQ document.
+  \item \textbf{Fair testing.} Accuracy is measured without ever letting the model see the future
+        (we explain how in Section~\ref{sec:terms}), and then confirmed by comparing an old
+        forecast against months that were released only later.
+  \item \textbf{Keeps working.} The forecasting logic is wrapped in a monitoring application that
+        updates itself every month.
+\end{itemize}
+We avoid hype. We do not call this a ``crime prediction engine,'' and we make no accuracy claim
+for the scenario projection.
+
+\subsection{Contributions}
+This paper makes four contributions:
+\begin{enumerate}
+  \item \textbf{A verified PHQ dataset.} A reported-crime dataset for January 2019 to April 2026,
+        traced to the official signed PHQ statements and
+        checked with a five-step audit against 22 source documents: all 88 months reconcile
+        internally, the six complete years (2019--2024) are cross-checked against PHQ's
+        independently printed annual summary pages, and a 429-cell manual re-audit of the recent
+        window matched the source with zero mismatches.
+  \item \textbf{Fair, leak-free testing.} A rolling-origin validation and backtesting framework.
+        We train only on data up to April 2025, forecast 1, 3, 6, and 12 months ahead, and
+        compare against the real PHQ numbers released afterward.
+  \item \textbf{Plain-language explainability.} A diagnostic layer that shows which inputs the
+        model trusts and which crime types are easy or hard to forecast.
+  \item \textbf{A working monitoring application.} Deployable software that adds each new month,
+        automatically re-checks the previous forecast, retrains, and watches for drift.
+\end{enumerate}
+
+\section{Related Work}
+\subsection{Crime Forecasting in Bangladesh}
+A few studies have applied machine learning to Bangladesh crime data. Awal et al.~\cite{awal2016}
+used linear regression to forecast crime trends from Bangladesh Police records. Biswas and
+Basak~\cite{biswas2019} extended this at an IEEE conference with polynomial and random-forest
+regression on PHQ website data through 2018. Nahid~\cite{nahid2021} applied Random Forest, MLP,
+and Decision Tree classifiers to PHQ data for five police units. Shohan et al.~\cite{shohan2022}
+worked on a different problem, classifying incident-level crime from newspaper articles.
+
+We looked closely at what these papers documented. Biswas and Basak~\cite{biswas2019} describe
+training their regression models on a training set and then forecasting on a separate test set
+and comparing with the actual values, that is, a single fixed train--test split rather than a
+time-series protocol that rolls forward month by month. Across these studies, after researching
+the published papers, \emph{we have not seen documented evidence} of three things that our work
+adds:
+\begin{itemize}
+  \item a source-verification audit that checks each number against the original PHQ documents;
+  \item post-release back-testing, where a forecast made at a fixed past date is later compared
+        against months that were published only afterward;
+  \item an explainability layer that shows which crime types drive the forecast error.
+\end{itemize}
+We state this carefully. We are not claiming these studies did nothing useful; we are saying that,
+in their published text, we did not find these specific safeguards. Our contribution is to add
+them.
+
+\subsection{Forecasting Methods and Validation}
+Testing a forecast on data it has already seen gives a falsely high score. Tashman~\cite{tashman2000}
+reviews out-of-sample testing and recommends rolling-origin evaluation instead of a single split.
+Bergmeir and Ben\'itez~\cite{bergmeir2012} show that rolling-origin protocols give more reliable
+error estimates than random splits, which can leak future information. For measuring error,
+Hyndman and Koehler~\cite{hyndman2006} analyse percentage- and scale-based measures and propose
+the mean absolute scaled error (MASE); we report MAPE, WAPE, sMAPE, MAE, RMSE, and a seasonal
+MASE. Classical models remain strong on short monthly data: the ARIMA/SARIMA
+family~\cite{boxjenkins2015}, exponential smoothing (ETS)~\cite{hyndman2002ets}, and the Theta
+method~\cite{assimakopoulos2000theta}, whose strength on monthly series was shown in the M3
+competition~\cite{makridakis2000m3}. Gradient-boosted trees such as
+LightGBM~\cite{ke2017lightgbm} give a machine-learning baseline; we use
+statsmodels~\cite{seabold2010statsmodels} for the classical models. Transformer models such as the
+Temporal Fusion Transformer~\cite{lim2021tft} and PatchTST~\cite{nie2023patchtst} do well on large
+datasets; we test a lightweight Transformer only to check feasibility, because our history is
+short.
+
+\subsection{Explainability Methods}
+Tree models such as LightGBM~\cite{ke2017lightgbm} report a built-in importance score, which
+together with permutation importance~\cite{breiman2001} and SHAP~\cite{lundberg2017shap} forms a
+standard toolkit. Local methods such as LIME~\cite{ribeiro2016lime} are also common. Surveys of
+machine-learning crime forecasting~\cite{yin2023crime} stress reported-crime data and public-safety
+uses, which is exactly our setting. We combine these tools into a simple explanation layer.
+
+\section{Dataset and Source Verification}
+The data comes from the official monthly reported-crime statements released by Police
+Headquarters, Bangladesh~\cite{phq_source}. It covers January 2019 to April 2026 (88 months in a row,
+with no missing months). There are 17 reporting units: eight metropolitan police units (DMP, CMP,
+KMP, RMP, BMP, SMP, RPMP, GMP), eight ranges (Dhaka, Mymensingh, Chittagong, Sylhet, Khulna,
+Barishal, Rajshahi, Rangpur), and the Railway Range. Together these cover the whole country, so
+adding them up gives a national total. Each month lists 15 crime types: Dacoity, Robbery, Murder,
+Speedy Trial, Riot, Woman \& Child Repression, Kidnapping, Police Assault, Burglary, Theft, Other
+Cases, and four recovery types (Arms Act, Explosive Act, Narcotics, Smuggling). ``Total Cases'' is
+the sum of all 15 types, matching the official total printed in the statements.
+
+\subsection{Five-Step Source Verification}
+A forecast is only as good as the data behind it. We checked the dataset in five steps, in plain
+terms:
+\begin{enumerate}
+  \item \textbf{Do the numbers add up?} We used spreadsheet formulas across 1{,}584 unit-month rows to confirm
+        the 15 crime types add up to the printed Total Cases for every unit and month.
+  \item \textbf{Does each number match the original document?} We opened 22 official PHQ statement
+        PDFs and compared the numbers in our spreadsheet against them, cell by cell.
+  \item \textbf{Where did each number come from?} We recorded the source (which document, which
+        month) for every figure, so anyone can trace it back.
+  \item \textbf{Do the yearly totals match?} PHQ also publishes yearly summaries. We added up our
+        monthly numbers for each year and checked them against the published yearly totals (results below).
+  \item \textbf{Did our past forecast match reality?} We made a forecast at a fixed past date and
+        later compared it with the months PHQ released afterward (Section~\ref{sec:results}).
+\end{enumerate}
+Every one of the 88 months is printed in one of the 22 signed PHQ source documents (recent months in their own monthly statements, earlier years in PHQ's consolidated yearly statements) and was checked against it. All 88 months
+reconcile internally: the 15 crime types sum to the printed Total Cases for every unit and month,
+across 1{,}584 unit-month rows. For the six complete years (2019 to 2024), the monthly figures were
+additionally cross-checked against PHQ's independently printed annual summary pages; 2019 to 2023
+match exactly on all 17 columns, while 2024 matches on 16 of 17 columns and the grand total, the
+sole exception being a documented error on PHQ's own 2024 annual page (an RPMP Robbery/Murder
+mislabel that leaves every total unaffected). The most recent window (2025 to April 2026), which
+has no annual summary page yet, was re-audited cell by cell: three months as full visual checks
+against the signed scans and thirteen months number by number (unit totals, national totals,
+category totals, headers, and unit order), giving 429 of 429 matching comparisons with zero
+mismatches. Any discrepancies found during transcription (source typographical errors and a few
+ambiguous scanned digits) are catalogued and resolved in the dataset's audit-findings log, with
+none outstanding. Table~\ref{tab:data} summarizes the dataset.
+
+\begin{table}[t]
+\caption{Dataset and PHQ source-check summary.}
+\label{tab:data}
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}ll@{}}
+\toprule
+\textbf{Property} & \textbf{Value} \\
+\midrule
+Source-verified coverage & 2019-01 to 2026-04 (88 months) \\
+Forecasting data & 2019-01 to 2026-04 (88 months) \\
+Training cutoff for back-test & April 2025 (76 months) \\
+Frequency & monthly, no gaps \\
+Reporting units & 17 (covers the whole country) \\
+Crime types per month & 15 (+ Total Cases) \\
+Source documents checked & 22 official PHQ statements \\
+Internal consistency & all 88 months reconcile (zero errors) \\
+Annual cross-check (2019--2024) & exact (1 documented source error) \\
+Recent-window cell re-audit & 429 of 429 matched (zero) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\section{Methodology}
+\subsection{Terminology}
+\label{sec:terms}
+A few technical words appear in this paper. Here is what they mean, explained simply:
+
+\begin{itemize}
+  \item \textbf{Forecast horizon.} How far ahead we predict. We use horizons of 1, 3, 6, and
+        12 months; a 3-month horizon means predicting the value three months into the future.
+  \item \textbf{Backtesting (looking back to check).} We pretend it is a past date (say April
+        2025) and make a forecast using only the data available up to then. Then we wait for the
+        real months to arrive and check how close the forecast was. It is like sealing a prediction
+        in an envelope and opening it later to see if it was right.
+  \item \textbf{Rolling-origin validation.} Instead of testing once, we test many times. We train
+        on the first stretch of months, forecast the next few, and check. Then we move the starting
+        point forward and repeat. We keep ``rolling'' forward, always testing on months the model
+        has not learned from. This gives a fair, repeated measure of accuracy.
+  \item \textbf{Leak-free (no peeking at the future).} When we test a forecast, the model is never
+        allowed to use any data from after the forecast date. Letting it peek would be cheating and
+        would make the score look better than it really is. We never peek.
+  \item \textbf{Practical accuracy.} For easy reading we report accuracy as $100 - \text{MAPE}$,
+        where MAPE is the average percentage error. So a 7\% average error reads as 93\% practical
+        accuracy. This is just a readable label; MAPE and MASE are our real error measures.
+\end{itemize}
+
+\subsection{Forecasting Models}
+We use a transparent set of seven forecasting models, plus an ensemble (a simple average of ETS,
+Theta, ARIMA, SARIMA, and LightGBM). Every model is standard and easy to inspect:
+\begin{itemize}
+  \item \textbf{Naive} and \textbf{Seasonal Naive}: simple baselines (repeat the last value, or
+        the value from the same month last year).
+  \item \textbf{ETS}, \textbf{Theta}, \textbf{ARIMA}, \textbf{SARIMA}: classical time-series
+        models that capture trend and yearly seasonality.
+  \item \textbf{LightGBM}: a gradient-boosted tree using past months as features.
+  \item \textbf{Ensemble}: the average of ETS, Theta, ARIMA, SARIMA, and LightGBM. Averaging
+        reduces the risk of any single model going wrong.
+\end{itemize}
+If a model ever produces a broken or unrealistic number (non-finite, negative, or implausibly
+large), the system automatically falls back to the Seasonal Naive forecast and records the event
+in a persistent audit log. This guard runs identically in the analysis notebook and in the
+monitoring software, so a single bad fit can never silently spoil the results.
+
+\subsection{Validation and Back-Testing Protocol}
+We tested in two ways that support each other:
+\begin{itemize}
+  \item \textbf{Rolling-origin validation} over the full data, at horizons of 1, 3, 6, and 12
+        months, using an expanding training window.
+  \item \textbf{A fixed back-test:} we trained only on January 2019 to April 2025, then forecast
+        1, 3, 6, and 12 months ahead, landing on May 2025, July 2025, October 2025, and April 2026. We compared
+        each forecast with the real, later-released PHQ number for that month.
+\end{itemize}
+We group the crime types into \emph{stable} types (Total Cases, Murder, Theft, Woman \& Child
+Repression, Robbery), which have large, steady monthly counts, and \emph{hard} types (Narcotics
+recovery, Kidnapping, Dacoity), whose counts are small and jumpy. Our headline accuracy uses the
+stable types only, and we are open about why (Section~\ref{sec:xai}).
+
+\section{Results}
+\label{sec:results}
+We report two things separately and never mix them: (A) the fixed back-test of the April 2025
+forecast, and (B) the rolling-origin validation over all the data.
+
+\subsection{Post-Release Back-Test of the April 2025 Forecast}
+This is the strongest evidence in the paper. We made a forecast in April 2025, using \emph{only}
+data up to that point, and then checked it against the real PHQ numbers that came out later. This is a single forecast origin for one series, national Total Cases. The ensemble forecast was:
+\begin{itemize}
+  \item \textbf{98.9\%} accurate 1 month ahead (May 2025),
+  \item \textbf{97.8\%} accurate 3 months ahead (July 2025),
+  \item \textbf{92.8\%} accurate 6 months ahead (October 2025),
+  \item \textbf{86.1\%} accurate 12 months ahead (April 2026).
+\end{itemize}
+All four figures are for national Total Cases at this single April 2025 origin, not the rolling-origin averages over the five stable crime types in Table~\ref{tab:horizon} (where the 12-month figure is 89.9\%). A single national total swings more than an average over stable series, so its long-horizon accuracy is naturally a little lower; the two are measured differently and reported separately.
+Fig.~\ref{fig:backtest} shows the full picture: the dark line is the real, verified history; the
+dashed line is the April 2025 forecast; and the marked points are the four checks. The forecast
+stays close to reality, and accuracy is naturally highest at the short horizon and slowly drops as
+we look further ahead, exactly what we expect from an honest forecast. This same checking step
+is built into the monitoring loop (Section~\ref{sec:monitoring}): every new month becomes a fresh
+test of the last forecast.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig1_backtest_3horizon.png}
+\caption{The forecast made in April 2025 versus the real PHQ numbers released later (national
+Total Cases, single origin). The forecast tracks reality closely: 98.9\% accurate at 1 month,
+97.8\% at 3 months, 92.8\% at 6 months, and 86.1\% at 12 months. This is a fair test: the model
+never saw any data after April 2025.}
+\label{fig:backtest}
+\end{figure}
+
+\subsection{Rolling-Origin Validation}
+The repeated rolling-origin test agrees with the back-test. Unlike the single-origin back-test
+above, these numbers are averaged over many forecast origins and over the five stable crime types,
+so they are not expected to match the back-test figure for any single month; the two tests are
+complementary, not contradictory. For the stable crime types, the average
+error stays low at every horizon, well under the 18\% line (82\% accuracy) that we treat as the
+minimum bar (Table~\ref{tab:horizon}, Fig.~\ref{fig:horizon}). Using a ``furthest horizon that
+still passes'' rule, the 12-month horizon (89.9\% accuracy) is our headline, while the 1-month
+horizon is the most accurate at 94.7\%.
+
+\begin{table}[t]
+\caption{Rolling-origin accuracy for stable crime types, by horizon.}
+\label{tab:horizon}
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}ccccc@{}}
+\toprule
+\textbf{Horizon} & \textbf{MAPE (\%)} & \textbf{Practical acc. (\%)} & \textbf{MASE} & \textbf{Status} \\
+\midrule
+1  & 5.27  & 94.7 & 0.346 & pass \\
+3  & 7.34  & 92.7 & 0.500 & pass \\
+6  & 8.33  & 91.7 & 0.544 & pass \\
+12 & 10.13 & 89.9 & 0.674 & pass (headline) \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig2_horizon_mape.png}
+\caption{Average error for stable crime types at each horizon. Every bar stays below the 18\% line
+(82\% accuracy), which is why we can stand behind a 12-month forecast, not just a 1-month one.}
+\label{fig:horizon}
+\end{figure}
+
+The ensemble was the most reliable model overall, with the lowest average error and beating the
+Seasonal Naive baseline in 75\% of the test cases (Table~\ref{tab:model}, Fig.~\ref{fig:model}).
+A MASE below 1.0 means a model beats the seasonal baseline on average; the ensemble reaches 0.577,
+and every classical model here is below 1.0.
+LightGBM was not competitive on this short monthly history, which is expected: tree models need
+more data than we have.
+
+\begin{table}[t]
+\caption{Model comparison over stable crime types (lower error is better).}
+\label{tab:model}
+\centering
+\renewcommand{\arraystretch}{1.2}
+\begin{tabular}{@{}lccc@{}}
+\toprule
+\textbf{Model} & \textbf{Mean MAPE (\%)} & \textbf{Mean MASE} & \textbf{Beats Seasonal Naive (\%)} \\
+\midrule
+\textbf{Ensemble} & \textbf{8.96} & \textbf{0.577} & \textbf{75} \\
+ETS      & 9.64  & 0.633 & 55 \\
+Seasonal Naive & 9.84 & 0.636 & n/a \\
+Theta    & 10.19 & 0.670 & 55 \\
+SARIMA   & 10.23 & 0.672 & 20 \\
+ARIMA    & 10.63 & 0.702 & 45 \\
+Naive    & 12.35 & 0.819 & 15 \\
+LightGBM & 14.82 & 0.890 & 25 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig3_model_comparison.png}
+\caption{Average error by model across stable crime types. The ensemble (green) is the most
+accurate. Tree-based LightGBM trails because the monthly history is short.}
+\label{fig:model}
+\end{figure}
+
+\subsection{Scenario Projection to December 2027}
+Using all 88 verified months, we extend the ensemble forecast to December 2027
+(Fig.~\ref{fig:scenario}). \textbf{These numbers are a planning scenario, not a verified
+prediction.} We attach no accuracy claim to them. They are useful for rough planning, and the
+shaded band is a reminder that the real values will differ.
+
+For concreteness, the scenario keeps national monthly Total Cases roughly in the 14{,}600 to 16{,}600 range through 2027, ending near 14{,}600 in December 2027, for an implied 2027 total of about 184{,}000 cases (Table~\ref{tab:scenario}). These remain planning figures with no accuracy claim.
+
+\begin{table}[t]
+\caption{Scenario projection for national Total Cases (planning only; no validated accuracy claim). Horizons are measured from the last observed month, April 2026.}
+\label{tab:scenario}
+\centering
+\begin{tabular}{@{}llr@{}}
+\toprule
+Horizon & Target month & Projected Total Cases \\
+\midrule
++1 month & May 2026 & 16{,}639 \\
++3 months & July 2026 & 16{,}118 \\
++6 months & October 2026 & 15{,}352 \\
++12 months & April 2027 & 16{,}142 \\
++20 months & December 2027 & 14{,}587 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig4_scenario_dec2027.png}
+\caption{Verified history (to April 2026) with a planning-only projection to December 2027. The
+vertical line marks where real data ends. No accuracy is claimed for the projected part.}
+\label{fig:scenario}
+\end{figure}
+
+\section{Explainability and Error Analysis}
+\label{sec:xai}
+A forecast people can trust should also be a forecast people can understand. We add a simple
+explanation layer. It does not change the models or the accuracy; it only shows \emph{what the
+model is paying attention to} and \emph{where it struggles}.
+
+\subsection{Feature Importance}
+We trained a LightGBM model on the same past-month features the pipeline uses and read both its
+built-in importance and a model-agnostic permutation check~\cite{breiman2001}. Both point the same
+way (Fig.~\ref{fig:perm}):
+\begin{itemize}
+  \item the \textbf{most recent month} matters most;
+  \item the \textbf{recent ups and downs} (how bumpy the last few months were) matter next;
+  \item the \textbf{month of the year} matters too, which fits the yearly pattern in crime data.
+\end{itemize}
+Because two different methods agree, we can be confident the model is using real, sensible signals
+(recent level and seasonality), not random noise.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig5_permutation_importance.png}
+\caption{What the model relies on most, measured by how much accuracy drops when each input is
+shuffled. The last month and recent movement lead, with month-of-year close behind, which is sensible,
+not noise.}
+\label{fig:perm}
+\end{figure}
+
+\subsection{Error by Crime Category}
+We also measured the error for each crime type (Fig.~\ref{fig:err}). Two clear patterns appear:
+\begin{itemize}
+  \item \textbf{Stable types} (Theft at 6.4\% error, Total Cases at 7.0\%, Murder at 8.6\%) are
+        easy to forecast because their monthly counts are large and steady.
+  \item \textbf{Hard types} (Kidnapping at 22\%, Dacoity at 18\%) are difficult because their counts
+        are small, so even a swing of a few cases looks like a big percentage error.
+\end{itemize}
+This is exactly why our headline accuracy uses the stable types only and openly keeps the hard
+types separate. Hiding the hard types would be dishonest; reporting them as headline accuracy
+would be misleading. We do neither.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig6_error_contribution.png}
+\caption{Percentage error by crime type. Green types are stable and used in the headline; orange
+types are hard (small, jumpy counts) and kept separate. The split is reported openly.}
+\label{fig:err}
+\end{figure}
+
+\subsection{Scope of the Explainability Layer}
+The explanation layer is a diagnostic, not a cause. It shows what the model leans on; it does not
+prove that crime in the real world works that way. It shows where forecasts miss; it does not
+explain why crime itself went up or down. It changes none of the accuracy numbers above.
+
+\section{Operational Monitoring System}
+\label{sec:monitoring}
+A research result that sits in a notebook helps no one. We built a working application so the
+framework can run as a monthly routine inside a police or planning office. Fig.~\ref{fig:workflow}
+shows the loop. In plain terms, the software does this:
+\begin{itemize}
+  \item \textbf{Adds a new month} from a CSV or Excel file, and checks it automatically (missing
+        units, missing crime types, or impossible values are flagged before anything is saved).
+  \item \textbf{Re-checks the last forecast} against the new real numbers, so accuracy is tracked
+        as it happens.
+  \item \textbf{Retrains the models} on the updated data and produces the next forecast.
+  \item \textbf{Watches for drift}: if accuracy starts slipping, it raises a warning and
+        recommends recalibration.
+  \item \textbf{Shows the explanation views} (which inputs matter, which crime types are hard).
+  \item \textbf{Controls access by role} (administrator, operator, reviewer, viewer), so data entry
+        and approval are separated.
+\end{itemize}
+The application keeps a full audit trail (who added or approved what, and when), stores every
+forecast so it can be scored later, and writes any model fallback to that same persistent audit
+log. It was checked with an automated smoke-test suite of 18 checks across seven groups: seed-data
+integrity, duplicate-month safety, forecasting completion, recalibration persistence,
+forecast-vs-actual lookup, restart-safe database reads, and role-based authentication; all 18 pass.
+It is straightforward to deploy on a single office machine or a small server.
+
+\begin{figure}[t]
+\centering
+\includegraphics[width=\columnwidth]{figures/fig7_workflow.png}
+\caption{The monthly monitoring loop. Each new PHQ release is added and checked, the previous
+forecast is scored against it, drift is watched, the models are retrained, and the next forecast is
+produced, then the cycle repeats.}
+\label{fig:workflow}
+\end{figure}
+
+\section{Limitations}
+We want readers to know exactly what this system is and is not:
+\begin{itemize}
+  \item It forecasts \textbf{reported} crime (what police recorded), not all real crime. Unreported
+        crime is outside its reach.
+  \item It does \textbf{not} predict individuals or specific locations. It forecasts monthly counts.
+  \item The monthly history is \textbf{short} (88 months). This is why simple, classical models and
+        their average beat heavier deep-learning models here.
+  \item Accuracy \textbf{drops with distance}: short-term forecasts are stronger than long-term ones.
+  \item The future projection is a \textbf{planning scenario}, not a verified forecast.
+  \item Forecasts can be disturbed by \textbf{sudden shocks} (for example, the large drop in early
+        2020 during the pandemic, which is visible in our data). No model can foresee such events.
+\end{itemize}
+
+\section{Future Work}
+\begin{itemize}
+  \item Add external covariates (for example population or economic indicators) under the same
+        source-checking and back-testing rules.
+  \item Add district-level forecasting under the same checking and testing rules.
+  \item Explore privacy-preserving federated learning~\cite{mcmahan2017fl,kairouz2021fl} so multiple
+        police units could improve a shared model without sharing raw records.
+  \item Add automatic alerts (email or dashboard) when drift crosses the warning level.
+\end{itemize}
+
+\section{Conclusion}
+The real value of this work is not a single accuracy number; it is a trustworthy pipeline from
+verified government data to a forecast that has been tested fairly and runs every month. When we
+made a forecast in April 2025 and checked it against the months PHQ released later, it was 98.9\%
+accurate at 1 month, 97.8\% at 3 months, 92.8\% at 6 months, and 86.1\% at 12 months for national
+Total Cases. The
+ensemble of classical models was the most reliable. We keep the stable and hard crime types
+honestly separate, we explain what the model relies on in plain language, and we ship a working
+monitoring application so the framework can serve real planning needs. The forecasting numbers
+are a planning scenario only. Built and used responsibly, a tool like this can help Bangladesh
+plan for public safety with clear eyes and honest numbers.
+
+\section*{Reproducibility}
+The verified dataset, the analysis notebook with all results and figures, and the monitoring
+application are provided as a companion package, so every number and figure in this paper can be
+regenerated.
+
+\bibliographystyle{ieeetr}
+\bibliography{references}
+
+\end{document}

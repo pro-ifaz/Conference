@@ -1,0 +1,180 @@
+{
+  "horizon": [
+    {
+      "horizon": 1,
+      "mean_MAPE": 5.27,
+      "practical_acc": 94.7,
+      "mean_MASE": 0.346
+    },
+    {
+      "horizon": 3,
+      "mean_MAPE": 7.34,
+      "practical_acc": 92.7,
+      "mean_MASE": 0.5
+    },
+    {
+      "horizon": 6,
+      "mean_MAPE": 8.33,
+      "practical_acc": 91.7,
+      "mean_MASE": 0.544
+    },
+    {
+      "horizon": 12,
+      "mean_MAPE": 10.13,
+      "practical_acc": 89.9,
+      "mean_MASE": 0.674
+    }
+  ],
+  "model": [
+    {
+      "model": "Ensemble",
+      "mean_MAPE": 8.96,
+      "mean_MASE": 0.577,
+      "beats_SNaive_pct": 75.0
+    },
+    {
+      "model": "ETS",
+      "mean_MAPE": 9.64,
+      "mean_MASE": 0.633,
+      "beats_SNaive_pct": 55.0
+    },
+    {
+      "model": "SNaive",
+      "mean_MAPE": 9.84,
+      "mean_MASE": 0.636,
+      "beats_SNaive_pct": 0.0
+    },
+    {
+      "model": "Theta",
+      "mean_MAPE": 10.19,
+      "mean_MASE": 0.67,
+      "beats_SNaive_pct": 55.0
+    },
+    {
+      "model": "SARIMA",
+      "mean_MAPE": 10.23,
+      "mean_MASE": 0.672,
+      "beats_SNaive_pct": 20.0
+    },
+    {
+      "model": "ARIMA",
+      "mean_MAPE": 10.63,
+      "mean_MASE": 0.702,
+      "beats_SNaive_pct": 45.0
+    },
+    {
+      "model": "Naive",
+      "mean_MAPE": 12.35,
+      "mean_MASE": 0.819,
+      "beats_SNaive_pct": 15.0
+    },
+    {
+      "model": "LGBM",
+      "mean_MAPE": 14.82,
+      "mean_MASE": 0.89,
+      "beats_SNaive_pct": 25.0
+    }
+  ],
+  "backtest": [
+    {
+      "horizon": 3,
+      "target": "2025-07",
+      "actual": 15389,
+      "forecast": 15048.6,
+      "abs_pct_error": 2.21,
+      "practical_acc": 97.8
+    },
+    {
+      "horizon": 6,
+      "target": "2025-10",
+      "actual": 16170,
+      "forecast": 15012.4,
+      "abs_pct_error": 7.16,
+      "practical_acc": 92.8
+    },
+    {
+      "horizon": 12,
+      "target": "2026-04",
+      "actual": 17180,
+      "forecast": 14792.6,
+      "abs_pct_error": 13.9,
+      "practical_acc": 86.1
+    }
+  ],
+  "error": [
+    {
+      "category": "Theft",
+      "MAE": 48.4,
+      "MAPE": 6.37,
+      "group": "Stable"
+    },
+    {
+      "category": "Total Cases",
+      "MAE": 1117.1,
+      "MAPE": 6.98,
+      "group": "Stable"
+    },
+    {
+      "category": "Murder",
+      "MAE": 22.8,
+      "MAPE": 8.63,
+      "group": "Stable"
+    },
+    {
+      "category": "RC Narcotics",
+      "MAE": 642.2,
+      "MAPE": 9.94,
+      "group": "Hard"
+    },
+    {
+      "category": "Woman Child Repression",
+      "MAE": 133.6,
+      "MAPE": 10.24,
+      "group": "Stable"
+    },
+    {
+      "category": "Robbery",
+      "MAE": 13.6,
+      "MAPE": 13.46,
+      "group": "Stable"
+    },
+    {
+      "category": "Dacoity",
+      "MAE": 5.9,
+      "MAPE": 17.57,
+      "group": "Hard"
+    },
+    {
+      "category": "Kidnapping",
+      "MAE": 8.9,
+      "MAPE": 21.59,
+      "group": "Hard"
+    }
+  ],
+  "perm_top": [
+    {
+      "feature": "lag_1",
+      "perm_importance": 733.9227779545222
+    },
+    {
+      "feature": "roll_std_3",
+      "perm_importance": 321.25207125179685
+    },
+    {
+      "feature": "month",
+      "perm_importance": 175.6232381177588
+    },
+    {
+      "feature": "lag_4",
+      "perm_importance": 175.57511337278567
+    },
+    {
+      "feature": "lag_6",
+      "perm_importance": 142.02727586704478
+    }
+  ],
+  "scenario_dec2027": 14587,
+  "n_months": 88,
+  "train_months": 76,
+  "cat_start": "2019-01"
+}

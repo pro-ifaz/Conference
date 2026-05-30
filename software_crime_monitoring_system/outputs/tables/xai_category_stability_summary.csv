@@ -1,0 +1,9 @@
+crime_category,group,mean_practical_accuracy,mean_true_MASE,recent_cv,explanation
+Total_Cases,stable,89.9,0.92,0.09590755696091202,"Low relative volatility, MASE near/below 1: history is predictive; models track it well."
+Murder,stable,89.3,1.358,0.1436022615655282,"Low relative volatility, MASE near/below 1: history is predictive; models track it well."
+Theft,stable,90.0,0.652,0.11795873242433898,"Low relative volatility, MASE near/below 1: history is predictive; models track it well."
+Woman_Child_Repression,stable,88.6,0.667,0.2047839344064604,"Low relative volatility, MASE near/below 1: history is predictive; models track it well."
+Robbery,stable,87.7,0.922,0.1019231833612825,"Low relative volatility, MASE near/below 1: history is predictive; models track it well."
+RC_Narcotics,hard,70.4,0.702,0.12548215464870358,"High relative volatility (sparse counts or sharp swings): weaker signal-to-noise, higher error."
+Dacoity,hard,81.8,0.981,0.192264920863296,"High relative volatility (sparse counts or sharp swings): weaker signal-to-noise, higher error."
+Kidnapping,hard,78.8,1.198,0.1499195035460764,"High relative volatility (sparse counts or sharp swings): weaker signal-to-noise, higher error."

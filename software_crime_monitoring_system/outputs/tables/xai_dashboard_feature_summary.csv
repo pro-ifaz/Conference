@@ -1,0 +1,13 @@
+feature_name,importance_score,interpretation,related_error_metric,operational_meaning
+lag_1,0.2716,Last month value; short-term level/momentum,MAE / RMSE (level error),Most recent month dominates short-horizon monitoring alerts
+t_index,0.2437,Linear time trend,MAE / RMSE,Long-run growth context
+month_cos,0.101,"Calendar seasonality (annual, cosine)",MAPE (seasonal error),Seasonal adjustment for monthly targets
+roll_std_3,0.086,Recent 3-month volatility (instability),RMSE (volatility-driven error),Instability flag; widen monitoring bands when high
+lag_6,0.0647,Half-year memory; medium-term drift,MAE / RMSE,Medium-term staffing/deployment outlook
+lag_3,0.0632,Quarter-ago level; smooths one-off spikes,MAE / RMSE,Quarter baseline for resource allocation
+roll_mean_6,0.0536,Recent 6-month average level (slow trend),MAE / true_MASE,Slow trend line for strategic review
+lag_12,0.0341,Same month last year; seasonal anchor,MAPE / seasonal error,Year-on-year seasonal expectation for review meetings
+lag_2,0.0298,Two-month memory; short-term persistence,MAE / RMSE,Confirms short persistence; supports 1-2 month operational planning
+month_sin,0.0243,"Calendar seasonality (annual, sine)",MAPE (seasonal error),Seasonal adjustment for monthly targets
+roll_std_6,0.016,Recent 6-month volatility (instability),RMSE (volatility-driven error),Instability flag; category marked hard when high
+roll_mean_3,0.012,Recent 3-month average level (baseline),MAE (baseline drift),Current operating baseline shown on dashboard
