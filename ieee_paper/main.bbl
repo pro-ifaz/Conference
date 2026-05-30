@@ -103,13 +103,16 @@ J.~Yin, ``Crime prediction methods based on machine learning: A survey,'' {\em
   Computers, Materials \& Continua}, vol.~74, no.~2, pp.~4601--4629, 2023.
 
 \bibitem{phq_source}
-{Police Headquarters (PHQ), Bangladesh Police}, ``Monthly crime statistics
-  (signed, scanned statements), january 2020--april 2026.'' Bangladesh Police
-  official crime-statistics portal,
-  \url{https://www.police.gov.bd/en/january_2020}, 2026.
-\newblock Official monthly reported-crime statements. Local signed scanned PDFs
-  used as provenance evidence; 2025--April 2026 segment verified in this work
-  (16/16 months, 429/429 comparisons matched). Accessed: 26 May 2026.
+{Police Headquarters (PHQ), Bangladesh Police}, ``Crime statistics (signed,
+  scanned statements), january 2019--april 2026.'' Bangladesh Police official
+  crime-statistics portal, \url{https://www.police.gov.bd/en/january_2020},
+  2026.
+\newblock Official reported-crime statements. Recent months are sourced from
+  PHQ's individual monthly statements; earlier complete years, including 2019,
+  are sourced from PHQ's consolidated annual statements. Local signed scanned
+  PDFs used as provenance evidence; the 2025--April 2026 segment was verified
+  in this work (16/16 months, 429/429 comparisons matched). Accessed: 26 May
+  2026.
 
 \bibitem{mcmahan2017fl}
 B.~McMahan, E.~Moore, D.~Ramage, S.~Hampson, and B.~Ag{\"u}era~y Arcas,

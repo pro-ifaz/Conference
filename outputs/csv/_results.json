@@ -77,6 +77,14 @@
   ],
   "backtest": [
     {
+      "horizon": 1,
+      "target": "2025-05",
+      "actual": 16045,
+      "forecast": 15876.1,
+      "abs_pct_error": 1.05,
+      "practical_acc": 98.9
+    },
+    {
       "horizon": 3,
       "target": "2025-07",
       "actual": 15389,

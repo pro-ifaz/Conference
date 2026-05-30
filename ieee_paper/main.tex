@@ -55,8 +55,10 @@ pages, and a 429-cell manual re-audit of the most recent window matched the sour
 mismatches.
 We trained seven standard forecasting models and an average (ensemble) of them on data up to
 April 2025, then forecast 1, 3, 6, and 12 months ahead and compared the forecast with the real
-numbers that PHQ released later. For national Total Cases the forecast was 98.9\% accurate at 1
-month, 97.8\% at 3 months, 92.8\% at 6 months, and 86.1\% at 12 months. The ensemble was the most reliable model.
+numbers that PHQ released later. In this single-origin back-test of national Total Cases, the forecast was 98.9\% accurate at 1
+month, 97.8\% at 3 months, 92.8\% at 6 months, and 86.1\% at 12 months; a separate rolling-origin
+validation, averaged over the stable crime categories, ranged from 94.7\% (1 month) to 89.9\%
+(12 months). The two are measured differently and reported separately. The ensemble was the most reliable model.
 We add a plain-language explanation layer that shows which past months the model leans on and
 which crime types are hard to forecast, and we ship a working monitoring application that
 ingests each new month, re-checks the previous forecast, and updates the models. A Transformer
